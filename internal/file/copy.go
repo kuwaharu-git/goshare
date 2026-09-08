@@ -20,18 +20,9 @@ func Copy(srcPath string, dstPath string) error {
 	}
 	defer dst.Close()
 
-	buffer := make([]byte, 1024)
-	for {
-		n, err := src.Read(buffer)
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			return err
-		}
-		_, err = dst.Write(buffer[:n])
-		if err != nil {
-			return err
-		}
+	_, err = io.Copy(dst, src)
+	if err != nil {
+		return err
 	}
 
 	return nil
