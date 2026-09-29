@@ -5,6 +5,8 @@ import (
 	"io"
 	"net"
 	"os"
+
+	"github.com/kuwaharu-git/goshare/internal/progress"
 )
 
 func SendFile(address string, path string) error {
@@ -13,13 +15,20 @@ func SendFile(address string, path string) error {
 		return err
 	}
 	defer src.Close()
+	fileInfo, err := src.Stat()
+	if err != nil {
+		return err
+	}
+	size := fileInfo.Size()
+
+	progressReader := progress.NewReader(src, size)
 
 	conn, err := net.Dial("tcp", address)
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
-	_, err = io.Copy(conn, src)
+	_, err = io.Copy(conn, progressReader)
 	if err != nil {
 		return err
 	}
