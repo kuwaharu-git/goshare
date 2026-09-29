@@ -30,12 +30,12 @@ func main() {
 
 	if mode == "receive" {
 		if len(os.Args) < 4 {
-			fmt.Println("送信元アドレスと保存先ファイルパスを指定してください。")
+			fmt.Println("送信元アドレスと保存先ディレクトリを指定してください。")
 			return
 		}
 		address := os.Args[2]
-		path := os.Args[3]
-		err := transfer.ReceiveFile(address, path)
+		dir := os.Args[3]
+		err := transfer.ReceiveFile(address, dir)
 		if err != nil {
 			fmt.Println(err)
 		}
