@@ -1,10 +1,12 @@
 package transfer
 
 import (
+	"encoding/binary"
 	"fmt"
 	"io"
 	"net"
 	"os"
+	"path/filepath"
 
 	"github.com/kuwaharu-git/goshare/internal/progress"
 )
@@ -19,6 +21,9 @@ func SendFile(address string, path string) error {
 	if err != nil {
 		return err
 	}
+	filename := filepath.Base(path)
+	filenameBytes := []byte(filename)
+	filenameLength := uint16(len(filenameBytes))
 	size := fileInfo.Size()
 
 	progressReader := progress.NewReader(src, size)
@@ -28,6 +33,14 @@ func SendFile(address string, path string) error {
 		return err
 	}
 	defer conn.Close()
+	if err := binary.Write(conn, binary.BigEndian, filenameLength); err != nil {
+		return err
+	}
+
+	_, err = conn.Write(filenameBytes)
+	if err != nil {
+		return err
+	}
 	_, err = io.Copy(conn, progressReader)
 	if err != nil {
 		return err
@@ -38,7 +51,17 @@ func SendFile(address string, path string) error {
 
 func handleConnection(conn net.Conn, dir string) error {
 	defer conn.Close()
-	dst, err := os.CreateTemp(dir, "received-*")
+	var filenameLength uint16
+	binary.Read(
+		conn,
+		binary.BigEndian,
+		&filenameLength,
+	)
+	filenameBuffer := make([]byte, filenameLength)
+	_, err := io.ReadFull(conn, filenameBuffer)
+	filename := string(filenameBuffer)
+	dstPath := filepath.Join(dir, filename)
+	dst, err := os.Create(dstPath)
 	if err != nil {
 		return err
 	}
